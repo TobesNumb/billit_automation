@@ -39,26 +39,31 @@ export async function extractOrderLines(
             text: `Je ziet een foto van een handgeschreven dagrapport op een voorgedrukt formulier.
 LET OP: de foto kan gedraaid of zijwaarts zijn. Draai het mentaal recht voordat je leest.
 
-STAP 1 — Beschrijf eerst wat je ziet:
-- Hoeveel ingevulde rijen zijn er in de tabel? (lege rijen niet meetellen)
-- Wat staat er bij "DATUM:" bovenaan rechts? (formaat is dd/mm/yy of dd/mm/yyyy)
-- Lees per ingevulde rij de kolommen van links naar rechts:
-  * PROJECT: projectnummer (altijd formaat P25-XXXXX of P26-XXXXX, 5 cijfers na streepje)
+KRITISCH — PROJECTNUMMERS STAAN OP 2 REGELS:
+Het projectnummer wordt ALTIJD over 2 handgeschreven regels geschreven:
+  Regel 1: "P26-"
+  Regel 2: "00509"
+Dit is ÉÉN projectnummer: P26-00509. NIET twee aparte rijen!
+Het formaat is altijd: P + 2 cijfers + streepje + 5 cijfers (bv. P25-03888, P26-00509, P26-01237).
+
+STAP 1 — Beschrijf wat je ziet:
+- Wat staat er bij "DATUM:" op het formulier? (formaat dd/mm/yy of dd/mm/yyyy)
+- Tel het aantal UNIEKE tijdblokken in de VAN/TOT kolommen. Dat is het echte aantal rijen.
+- Lees per rij de kolommen:
+  * PROJECT: combineer de 2 regels tot één projectnummer (P2X-XXXXX)
   * KLANT/WERF: klantnaam (dit is GEEN projectnummer en GEEN tijd)
-  * VAN: starttijd in uu:mm (24-uurs, bv 02:00, 05:00, 09:00)
-  * TOT: eindtijd in uu:mm (altijd later dan VAN)
+  * VAN: starttijd in HH:MM (24-uurs)
+  * TOT: eindtijd in HH:MM (altijd later dan VAN)
   * ACTIVITEIT: beschrijving
 
-STAP 2 — Controleer jezelf:
-- Is TOT altijd later dan VAN? (anders heb je kolommen verwisseld)
-- Bevat het projectnummer exact 5 cijfers na het streepje?
-- Heb je geen klantnamen als projectnummer gelezen?
-- Is de datum realistisch? (jaar moet 2024, 2025 of 2026 zijn)
+STAP 2 — Controleer:
+- Is TOT altijd later dan VAN? (anders kolommen verwisseld)
+- Heeft elk projectnummer exact formaat P2X-XXXXX (5 cijfers)?
+- Klopt het aantal rijen met het aantal unieke tijdblokken?
+- Zijn er geen dubbele rijen door het 2-regelig projectnummer?
 
-STAP 3 — Geef het resultaat als JSON array:
-[{"date":"25/04/2026","projectNumber":"P26-00879","from":"02:00","to":"05:00","description":"Plaatsen"}]
-
-Geef eerst je analyse (stap 1 en 2), en daarna de JSON array na "RESULT:".`,
+STAP 3 — JSON array na "RESULT:":
+[{"date":"25/04/2026","projectNumber":"P26-00509","from":"05:00","to":"08:00","description":""}]`,
           },
         ],
       },
