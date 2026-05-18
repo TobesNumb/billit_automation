@@ -12,14 +12,6 @@ import {
 
 const app = new Hono();
 
-async function processReport(base64: string, mediaType: string, date: string) {
-  const lines = await extractOrderLines(base64, mediaType);
-  if (lines.length === 0) throw new Error("Geen orderlijnen gevonden");
-  const order = buildBillitOrder(lines, date);
-  const orderId = await createInvoice(order);
-  return { orderId, lineCount: lines.length, lines };
-}
-
 function formatConfirmation(
   orderId: string,
   lineCount: number,
@@ -73,12 +65,17 @@ app.post("/webhook", async (c) => {
     const { base64, contentType } = await getFileUrl(fileId);
     const date = new Date().toISOString().slice(0, 10);
 
-    const result = await processReport(base64, contentType || mediaType, date);
-    const confirmation = formatConfirmation(
-      result.orderId,
-      result.lineCount,
-      result.lines
-    );
+    const lines = await extractOrderLines(base64, contentType || mediaType);
+    if (lines.length === 0) throw new Error("Geen orderlijnen gevonden");
+
+    const ocrSummary = `📝 OCR resultaat — ${lines.length} lijnen:\n` +
+      lines.map((l) => `• ${l.projectNumber} ${l.from}–${l.to}${l.description ? " " + l.description : ""}`).join("\n") +
+      "\n\n⏳ Factuur aanmaken in Billit...";
+    await sendMessage(chatId, ocrSummary);
+
+    const order = buildBillitOrder(lines, date);
+    const orderId = await createInvoice(order);
+    const confirmation = formatConfirmation(orderId, lines.length, lines);
     await sendMessage(chatId, confirmation);
   } catch (err: unknown) {
     const errMsg = err instanceof Error ? err.message : String(err);
