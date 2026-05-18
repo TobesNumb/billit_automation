@@ -4,7 +4,7 @@ const BILLIT_API_KEY = process.env.BILLIT_API_KEY!;
 const BILLIT_PARTY_ID = process.env.BILLIT_PARTY_ID!;
 
 export async function createInvoice(order: BillitOrder): Promise<string> {
-  const baseUrl = process.env.BILLIT_API_URL || "https://my.billit.eu/api/v1";
+  const baseUrl = process.env.BILLIT_API_URL || "https://api.billit.be/v1";
   const url = `${baseUrl}/orders`;
   console.log(`Billit POST: ${url}`);
 

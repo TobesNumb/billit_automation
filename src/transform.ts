@@ -2,9 +2,9 @@ import type { OrderLine } from "./ocr.js";
 
 export interface BillitOrderLine {
   Description: string;
-  UnitPrice: number;
+  UnitPriceExcl: number;
   Quantity: number;
-  VatPercentage: number;
+  VATPercentage: number;
 }
 
 export interface BillitOrder {
@@ -66,9 +66,9 @@ export function buildBillitOrder(
 
     return {
       Description: `${displayDate} | ${line.projectNumber} | ${line.from} | ${line.to} | ${duration}`,
-      UnitPrice: 40.0,
+      UnitPriceExcl: 40.0,
       Quantity: hours,
-      VatPercentage: 21,
+      VATPercentage: 21,
     };
   });
 
