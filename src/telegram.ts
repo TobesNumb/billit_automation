@@ -45,7 +45,17 @@ export async function getFileUrl(
 
   const buffer = await fileRes.arrayBuffer();
   const base64 = Buffer.from(buffer).toString("base64");
-  const contentType = fileRes.headers.get("content-type") || "image/jpeg";
+
+  const filePath = data.result.file_path;
+  const ext = filePath.split(".").pop()?.toLowerCase();
+  const mimeMap: Record<string, string> = {
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    png: "image/png",
+    gif: "image/gif",
+    webp: "image/webp",
+  };
+  const contentType = mimeMap[ext || ""] || "image/jpeg";
 
   return { base64, contentType };
 }
