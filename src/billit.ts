@@ -4,7 +4,8 @@ const BILLIT_API_KEY = process.env.BILLIT_API_KEY!;
 const BILLIT_PARTY_ID = process.env.BILLIT_PARTY_ID!;
 
 export async function createInvoice(order: BillitOrder): Promise<string> {
-  const res = await fetch("https://app.billit.be/api/orders", {
+  const baseUrl = process.env.BILLIT_API_URL || "https://my.billit.eu/api";
+  const res = await fetch(`${baseUrl}/orders`, {
     method: "POST",
     headers: {
       Authorization: "apikey " + BILLIT_API_KEY,
