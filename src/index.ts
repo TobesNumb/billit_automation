@@ -80,16 +80,19 @@ app.post("/webhook", async (c) => {
       result.lines
     );
     await sendMessage(chatId, confirmation);
-  } catch (err) {
-    console.error("Processing failed:", err);
-    const chatId =
-      (await c.req.json().catch(() => null))?.message?.chat?.id;
-    if (chatId) {
-      await sendMessage(
-        chatId,
-        `❌ Fout: ${err instanceof Error ? err.message : String(err)}`
-      );
-    }
+  } catch (err: unknown) {
+    const errMsg = err instanceof Error ? err.message : String(err);
+    const errDetail = err && typeof err === "object" && "status" in err
+      ? `[${(err as { status: number }).status}] ${errMsg}`
+      : errMsg;
+    console.error("Processing failed:", errDetail, err);
+    try {
+      const update: TelegramUpdate = await c.req.json();
+      const chatId = update.message?.chat?.id;
+      if (chatId) {
+        await sendMessage(chatId, `❌ Fout: ${errDetail}`);
+      }
+    } catch {}
   }
 
   return c.json({ ok: true });

@@ -13,6 +13,7 @@ export async function extractOrderLines(
   base64: string,
   mediaType: string
 ): Promise<OrderLine[]> {
+  console.log(`OCR: mediaType=${mediaType}, base64 length=${base64.length}`);
   const response = await client.messages.create({
     model: "claude-sonnet-4-20250514",
     max_tokens: 1024,
