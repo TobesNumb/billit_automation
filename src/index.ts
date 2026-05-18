@@ -12,6 +12,11 @@ import {
 
 const app = new Hono();
 
+function parseTimeMins(t: string): number {
+  const [h, m] = t.split(":").map(Number);
+  return h * 60 + m;
+}
+
 function formatConfirmation(
   orderId: string,
   lineCount: number,
@@ -63,17 +68,25 @@ app.post("/webhook", async (c) => {
     }
 
     const { base64, contentType } = await getFileUrl(fileId);
-    const date = new Date().toISOString().slice(0, 10);
 
     const lines = await extractOrderLines(base64, contentType || mediaType);
     if (lines.length === 0) throw new Error("Geen orderlijnen gevonden");
 
+    const ocrDate = lines[0]?.date || "";
     const ocrSummary = `📝 OCR resultaat — ${lines.length} lijnen:\n` +
-      lines.map((l) => `• ${l.projectNumber} ${l.from}–${l.to}${l.description ? " " + l.description : ""}`).join("\n") +
-      "\n\n⏳ Factuur aanmaken in Billit...";
+      lines.map((l) => {
+        const mins = parseTimeMins(l.to) - parseTimeMins(l.from);
+        const h = Math.floor(mins / 60);
+        const m = mins % 60;
+        const dur = m > 0 ? `${h}u${m.toString().padStart(2, "0")}` : `${h}u00`;
+        return `${l.date} | ${l.projectNumber} | ${l.from} | ${l.to} | ${dur}`;
+      }).join("\n");
     await sendMessage(chatId, ocrSummary);
 
-    const order = buildBillitOrder(lines, date);
+    const isoDate = ocrDate
+      ? ocrDate.split("/").reverse().join("-")
+      : new Date().toISOString().slice(0, 10);
+    const order = buildBillitOrder(lines, isoDate);
     const orderId = await createInvoice(order);
     const confirmation = formatConfirmation(orderId, lines.length, lines);
     await sendMessage(chatId, confirmation);
