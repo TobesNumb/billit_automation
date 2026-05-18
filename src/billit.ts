@@ -4,8 +4,11 @@ const BILLIT_API_KEY = process.env.BILLIT_API_KEY!;
 const BILLIT_PARTY_ID = process.env.BILLIT_PARTY_ID!;
 
 export async function createInvoice(order: BillitOrder): Promise<string> {
-  const baseUrl = process.env.BILLIT_API_URL || "https://my.billit.eu/api";
-  const res = await fetch(`${baseUrl}/orders`, {
+  const baseUrl = process.env.BILLIT_API_URL || "https://my.billit.eu/api/v1";
+  const url = `${baseUrl}/orders`;
+  console.log(`Billit POST: ${url}`);
+
+  const res = await fetch(url, {
     method: "POST",
     headers: {
       Authorization: "apikey " + BILLIT_API_KEY,
@@ -15,11 +18,13 @@ export async function createInvoice(order: BillitOrder): Promise<string> {
     body: JSON.stringify(order),
   });
 
+  const body = await res.text();
+  console.log(`Billit response ${res.status}: ${body.slice(0, 500)}`);
+
   if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`Billit API ${res.status}: ${body}`);
+    throw new Error(`Billit API ${res.status}: ${body.slice(0, 300)}`);
   }
 
-  const data = (await res.json()) as { OrderID: string };
+  const data = JSON.parse(body) as { OrderID: string };
   return data.OrderID;
 }
