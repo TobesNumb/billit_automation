@@ -17,7 +17,7 @@ export async function extractOrderLines(
   console.log(`OCR: mediaType=${mediaType}, base64 length=${base64.length}`);
   const response = await client.messages.create({
     model: "claude-sonnet-4-6",
-    max_tokens: 1024,
+    max_tokens: 2048,
     messages: [
       {
         role: "user",
@@ -36,32 +36,29 @@ export async function extractOrderLines(
           },
           {
             type: "text",
-            text: `Dit is een handgeschreven dagrapport in tabelvorm. Lees het zorgvuldig.
+            text: `Je ziet een foto van een handgeschreven dagrapport op een voorgedrukt formulier.
+LET OP: de foto kan gedraaid of zijwaarts zijn. Draai het mentaal recht voordat je leest.
 
-De tabel heeft deze kolommen (van links naar rechts):
-1. PROJECT — projectnummer (formaat: P25-XXXXX of P26-XXXXX)
-2. KLANT/WERF — klantnaam of werfnaam
-3. VAN — starttijd (uu:mm formaat)
-4. TOT — eindtijd (uu:mm formaat)
-5. ACTIVITEIT — beschrijving van de activiteit
+STAP 1 — Beschrijf eerst wat je ziet:
+- Hoeveel ingevulde rijen zijn er in de tabel? (lege rijen niet meetellen)
+- Wat staat er bij "DATUM:" bovenaan rechts? (formaat is dd/mm/yy of dd/mm/yyyy)
+- Lees per ingevulde rij de kolommen van links naar rechts:
+  * PROJECT: projectnummer (altijd formaat P25-XXXXX of P26-XXXXX, 5 cijfers na streepje)
+  * KLANT/WERF: klantnaam (dit is GEEN projectnummer en GEEN tijd)
+  * VAN: starttijd in uu:mm (24-uurs, bv 02:00, 05:00, 09:00)
+  * TOT: eindtijd in uu:mm (altijd later dan VAN)
+  * ACTIVITEIT: beschrijving
 
-Bovenaan het formulier staat de DATUM (formaat dd/mm/yyyy of dd/mm/yy).
+STAP 2 — Controleer jezelf:
+- Is TOT altijd later dan VAN? (anders heb je kolommen verwisseld)
+- Bevat het projectnummer exact 5 cijfers na het streepje?
+- Heb je geen klantnamen als projectnummer gelezen?
+- Is de datum realistisch? (jaar moet 2024, 2025 of 2026 zijn)
 
-Extraheer:
-- date: de datum bovenaan het formulier, altijd in formaat "dd/mm/yyyy"
-- projectNumber: exact het projectnummer uit kolom 1 (bv. "P26-00879")
-- from: starttijd uit kolom VAN (bv. "03:30")
-- to: eindtijd uit kolom TOT (bv. "07:00")
-- description: activiteit/klant indien leesbaar, anders leeg
+STAP 3 — Geef het resultaat als JSON array:
+[{"date":"25/04/2026","projectNumber":"P26-00879","from":"02:00","to":"05:00","description":"Plaatsen"}]
 
-BELANGRIJK:
-- Lees kolommen apart. Verwar klantnamen niet met tijden.
-- Projectnummers bevatten altijd 5 cijfers na het streepje (bv. P26-00879, niet P26-).
-- Tijden zijn in 24-uurs formaat.
-- Als een projectnummer onvolledig of onleesbaar is, geef dan wat leesbaar is.
-
-Geef ENKEL een JSON array terug, geen uitleg. Voorbeeld:
-[{"date":"16/05/2026","projectNumber":"P26-00879","from":"03:30","to":"07:00","description":""}]`,
+Geef eerst je analyse (stap 1 en 2), en daarna de JSON array na "RESULT:".`,
           },
         ],
       },
@@ -70,7 +67,10 @@ Geef ENKEL een JSON array terug, geen uitleg. Voorbeeld:
 
   const text =
     response.content[0].type === "text" ? response.content[0].text : "";
-  const jsonMatch = text.match(/\[[\s\S]*\]/);
+  console.log("OCR raw response:", text);
+  const resultIdx = text.indexOf("RESULT:");
+  const searchText = resultIdx >= 0 ? text.slice(resultIdx) : text;
+  const jsonMatch = searchText.match(/\[[\s\S]*\]/);
   if (!jsonMatch) throw new Error("No JSON array found in Claude response");
   return JSON.parse(jsonMatch[0]) as OrderLine[];
 }
